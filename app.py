@@ -102,25 +102,14 @@ elif page in ["Learn Hiragana", "Learn Katakana"]:
 # Practice page
 elif page == "Practice":
     st.title("Practice Your Skills")
-    
-    # Tabs for different difficulty levels
+      # Tabs for different difficulty levels
     difficulty_tabs = st.tabs(["Beginner", "Intermediate", "Advanced"])
-    
-    # Beginner tab
+      # Beginner tab
     with difficulty_tabs[0]:
         st.header("Beginner Level Practice")
         st.write("Perfect for those just starting to learn Japanese characters and basic vocabulary.")
-          # Add practice recommendations
-        recommended_practice = user_manager.get_recommended_practice("beginner")
-        if recommended_practice:
-            format_name = {
-                "kana_matching": "Match Hiragana & Katakana",
-                "simple_vocabulary": "Basic Word Practice"
-            }.get(recommended_practice, recommended_practice.replace("_", " ").title())
-            
-            st.info(f"💡 Recommended: Try '{format_name}' to improve your skills!")
-        
-        # Practice types for beginners
+
+        # Practice types for beginners (always available)
         beginner_activities = practice_manager.get_practice_activities("beginner")
         beginner_practice_type = st.selectbox(
             "Choose practice type:",
@@ -130,53 +119,224 @@ elif page == "Practice":
                 "simple_vocabulary": "Basic Word Practice"
             }.get(x, x.replace("_", " ").title())
         )
-          # Start practice session button
-        if st.button("Start Beginner Practice"):
-            # Create practice exercise based on selected type
-            if beginner_practice_type == "kana_matching":
-                exercise = practice_manager.generate_exercise("kana_matching", "beginner", 
-                                                            {"hiragana": syllabary.hiragana, "katakana": syllabary.katakana})
-                
-                st.write(f"## {exercise['question']}")
-                user_answer = st.radio("Select the matching katakana:", exercise['options'])
-                
-                if st.button("Check Answer", key="matching_check"):
-                    if user_answer == exercise['answer']:
-                        st.success("Correct! 🎉")
-                        st.session_state.last_result = True
-                        # Record successful practice result
-                        user_manager.record_practice_result("beginner", "kana_matching", True, exercise['answer'])
-                    else:
-                        st.error(f"Not quite. The correct answer is '{exercise['answer']}'")
-                        st.session_state.last_result = False
-                        # Record unsuccessful practice result
-                        user_manager.record_practice_result("beginner", "kana_matching", False, exercise['answer'])
-                    st.info(exercise['explanation'])
-                
-            elif beginner_practice_type == "simple_vocabulary":
-                exercise = practice_manager.generate_exercise("simple_vocabulary", "beginner")
-                
-                st.write(f"## {exercise['question']}")
-                
-                # Display image if available (in real implementation, you'd have actual images)
-                if 'image' in exercise and exercise['image']:
-                    st.write("(Image would be displayed here)")
-                
-                user_answer = st.radio("Select the meaning:", exercise['options'])
-                
-                if st.button("Check Answer", key="vocab_check"):
-                    if user_answer == exercise['answer']:
-                        st.success("Correct! 🎉")
-                        st.session_state.last_result = True
-                        # Track progress
-                        user_manager.record_practice_result("beginner", "simple_vocabulary", True, exercise['question'])
-                    else:
-                        st.error(f"Not quite. The correct answer is '{exercise['answer']}'")
-                        st.session_state.last_result = False
-                        # Track progress
-                        user_manager.record_practice_result("beginner", "simple_vocabulary", False, exercise['question'])
-                    st.info(exercise['explanation'])
-    
+
+        # --- Kana Matching Practice ---
+        if beginner_practice_type == "kana_matching":
+            # State management for kana matching
+            if 'kana_matching_exercise' not in st.session_state:
+                st.session_state.kana_matching_exercise = None
+            if 'kana_matching_answered' not in st.session_state:
+                st.session_state.kana_matching_answered = False
+            if 'kana_matching_correct' not in st.session_state:
+                st.session_state.kana_matching_correct = None
+            if 'kana_matching_user_answer' not in st.session_state:
+                st.session_state.kana_matching_user_answer = None
+            if 'kana_matching_wrong_streak' not in st.session_state:
+                st.session_state.kana_matching_wrong_streak = 0
+            if 'kana_matching_right_streak' not in st.session_state:
+                st.session_state.kana_matching_right_streak = 0
+            if 'kana_matching_started' not in st.session_state:
+                st.session_state.kana_matching_started = False
+
+            def new_kana_matching_question():
+                st.session_state.kana_matching_exercise = practice_manager.generate_exercise(
+                    "kana_matching", "beginner", {"hiragana": syllabary.hiragana, "katakana": syllabary.katakana})
+                st.session_state.kana_matching_answered = False
+                st.session_state.kana_matching_correct = None
+                st.session_state.kana_matching_user_answer = None
+
+            # Show Start button first
+            if not st.session_state.kana_matching_started:
+                if st.button("Start Beginner Practice", key="kana_start"):
+                    st.session_state.kana_matching_started = True
+                    new_kana_matching_question()
+                    st.rerun()
+            else:
+                # Show the exercise
+                if st.session_state.kana_matching_exercise:
+                    exercise = st.session_state.kana_matching_exercise
+                    st.write(f"## {exercise['question']}")
+                    
+                    user_answer = st.radio(
+                        "Select the matching katakana:", 
+                        exercise['options'],
+                        index=exercise['options'].index(st.session_state.kana_matching_user_answer) if st.session_state.kana_matching_user_answer in exercise['options'] else 0
+                    )                    # Only show 'Check Answer' if the user hasn't answered yet
+                    if not st.session_state.kana_matching_answered:
+                        if st.button("Check Answer", key="matching_check"):
+                            st.session_state.kana_matching_user_answer = user_answer
+                            st.session_state.kana_matching_answered = True
+                            if user_answer == exercise['answer']:
+                                st.session_state.kana_matching_correct = True
+                                st.session_state.kana_matching_right_streak += 1
+                                st.session_state.kana_matching_wrong_streak = 0
+                                user_manager.record_practice_result("beginner", "kana_matching", True, exercise['answer'])
+                            else:
+                                st.session_state.kana_matching_correct = False
+                                st.session_state.kana_matching_wrong_streak += 1
+                                st.session_state.kana_matching_right_streak = 0
+                                user_manager.record_practice_result("beginner", "kana_matching", False, exercise['answer'])
+                    
+                    # Show feedback and action buttons after checking the answer
+                    if st.session_state.kana_matching_answered:
+                        if st.session_state.kana_matching_correct:
+                            st.success("✅ Correct! 🎉 Great job!")
+                            st.info(exercise['explanation'])
+                            
+                            # Show recommendation if 6 correct in a row
+                            if st.session_state.kana_matching_right_streak >= 6:
+                                st.info("🌟 You're on a roll! Try the 'Basic Word Practice' section for a new challenge.")
+                            
+                            # Only show Next Question for correct answers
+                            if st.button("Next Question", key="matching_next"):
+                                new_kana_matching_question()
+                                st.rerun()
+                        else:
+                            st.error(f"❌ Not quite. The correct answer is '{exercise['answer']}'")
+                            st.info(exercise['explanation'])
+                            
+                            # Show recommendation if 3 wrong in a row
+                            if st.session_state.kana_matching_wrong_streak >= 3:
+                                st.warning("🔎 Having trouble? Consider reviewing the 'Learn Hiragana' and 'Learn Katakana' pages before practicing again.")
+                            
+                            # Show both Try Again and Next Question for incorrect answers
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                if st.button("Try Again", key="matching_retry"):
+                                    st.session_state.kana_matching_answered = False
+                                    st.session_state.kana_matching_user_answer = None
+                                    st.rerun()
+                            with col2:
+                                if st.button("Next Question", key="matching_next_any"):
+                                    new_kana_matching_question()
+                                    st.rerun()
+        # --- End of Kana Matching Practice ---
+
+        # --- Basic Word Practice (Simple Vocabulary) ---
+        elif beginner_practice_type == "simple_vocabulary":
+            # State management for simple vocabulary
+            if 'simple_vocab_exercise' not in st.session_state:
+                st.session_state.simple_vocab_exercise = None
+            if 'simple_vocab_answered' not in st.session_state:
+                st.session_state.simple_vocab_answered = False
+            if 'simple_vocab_correct' not in st.session_state:
+                st.session_state.simple_vocab_correct = None
+            if 'simple_vocab_user_answer' not in st.session_state:
+                st.session_state.simple_vocab_user_answer = None
+            if 'simple_vocab_wrong_streak' not in st.session_state:
+                st.session_state.simple_vocab_wrong_streak = 0
+            if 'simple_vocab_right_streak' not in st.session_state:
+                st.session_state.simple_vocab_right_streak = 0
+            if 'simple_vocab_started' not in st.session_state:
+                st.session_state.simple_vocab_started = False
+
+            def new_simple_vocab_question():
+                st.session_state.simple_vocab_exercise = practice_manager.generate_exercise("simple_vocabulary", "beginner")
+                st.session_state.simple_vocab_answered = False
+                st.session_state.simple_vocab_correct = None
+                st.session_state.simple_vocab_user_answer = None
+
+            # Show Start button first
+            if not st.session_state.simple_vocab_started:
+                if st.button("Start Beginner Practice", key="vocab_start"):
+                    st.session_state.simple_vocab_started = True
+                    new_simple_vocab_question()
+                    st.rerun()
+            else:
+                # Show the exercise
+                if st.session_state.simple_vocab_exercise:
+                    exercise = st.session_state.simple_vocab_exercise
+                    st.write(f"## {exercise['question']}")
+                    
+                    user_answer = st.radio(
+                        "Select the meaning:", 
+                        exercise['options'],
+                        index=exercise['options'].index(st.session_state.simple_vocab_user_answer) if st.session_state.simple_vocab_user_answer in exercise['options'] else 0
+                    )                    # Only show 'Check Answer' if the user hasn't answered yet
+                    if not st.session_state.simple_vocab_answered:
+                        if st.button("Check Answer", key="simple_vocab_check"):
+                            st.session_state.simple_vocab_user_answer = user_answer
+                            st.session_state.simple_vocab_answered = True
+                            if user_answer == exercise['answer']:
+                                st.session_state.simple_vocab_correct = True
+                                st.session_state.simple_vocab_right_streak += 1
+                                st.session_state.simple_vocab_wrong_streak = 0
+                                user_manager.record_practice_result("beginner", "simple_vocabulary", True, exercise['question'])
+                            else:
+                                st.session_state.simple_vocab_correct = False
+                                st.session_state.simple_vocab_wrong_streak += 1
+                                st.session_state.simple_vocab_right_streak = 0
+                                user_manager.record_practice_result("beginner", "simple_vocabulary", False, exercise['question'])
+                    
+                    # Show feedback and action buttons after checking the answer
+                    if st.session_state.simple_vocab_answered:
+                        if st.session_state.simple_vocab_correct:
+                            st.success("✅ Correct! 🎉 Great job!")
+                            st.info(exercise['explanation'])
+                            
+                            # Show recommendation if 6 correct in a row - suggest intermediate level
+                            if st.session_state.simple_vocab_right_streak >= 6:
+                                st.info("🌟 Excellent! You're ready for intermediate level practice. Try switching to the 'Intermediate' tab!")
+                            
+                            # Only show Next Question for correct answers
+                            if st.button("Next Question", key="vocab_next"):
+                                new_simple_vocab_question()
+                                st.rerun()
+                        else:
+                            st.error(f"❌ Not quite. The correct answer is '{exercise['answer']}'")
+                            st.info(exercise['explanation'])
+                            
+                            # Show recommendation if 3 wrong in a row
+                            if st.session_state.simple_vocab_wrong_streak >= 3:
+                                st.warning("🔎 Having trouble? Consider reviewing basic vocabulary or try the 'Match Hiragana & Katakana' practice first.")
+                            
+                            # Show both Try Again and Next Question for incorrect answers
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                if st.button("Try Again", key="vocab_retry"):
+                                    st.session_state.simple_vocab_answered = False
+                                    st.session_state.simple_vocab_user_answer = None
+                                    st.rerun()
+                            with col2:
+                                if st.button("Next Question", key="vocab_next_any"):
+                                    new_simple_vocab_question()
+                                    st.rerun()
+        # --- End of Basic Word Practice ---
+                    
+                    # Show feedback and action buttons after checking the answer
+                    if st.session_state.simple_vocab_answered:
+                        if st.session_state.simple_vocab_correct:
+                            st.success("✅ Correct! 🎉 Great job!")
+                            st.info(exercise['explanation'])
+                            
+                            # Show recommendation if 6 correct in a row
+                            if st.session_state.simple_vocab_right_streak >= 6:
+                                st.info("🌟 You're doing great! You can try the 'Match Hiragana & Katakana' section for more practice.")
+                            
+                            # Only show Next Question for correct answers
+                            if st.button("Next Question", key="vocab_next"):
+                                new_simple_vocab_question()
+                                st.rerun()
+                        else:
+                            st.error(f"❌ Not quite. The correct answer is '{exercise['answer']}'")
+                            st.info(exercise['explanation'])
+                            
+                            # Show recommendation if 3 wrong in a row
+                            if st.session_state.simple_vocab_wrong_streak >= 3:
+                                st.warning("🔎 Having trouble? Consider reviewing the 'Learn Hiragana' and 'Learn Katakana' pages before practicing again.")
+                            
+                            # Show both Try Again and Next Question for incorrect answers
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                if st.button("Try Again", key="vocab_retry"):
+                                    st.session_state.simple_vocab_answered = False
+                                    st.session_state.simple_vocab_user_answer = None
+                                    st.rerun()
+                            with col2:
+                                if st.button("Next Question", key="vocab_next_any"):
+                                    new_simple_vocab_question()
+                                    st.rerun()
+        # --- End of Basic Word Practice ---
     # Intermediate tab
     with difficulty_tabs[1]:
         st.header("Intermediate Level Practice")

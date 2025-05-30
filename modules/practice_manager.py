@@ -455,6 +455,7 @@ class PracticeManager:
                 "translation": "Where is the toilet? Where is the station?"
             }
         ]
+        return random.choice(prompts)
 
 
     def generate_exercise(self, practice_type: str, difficulty: str, syllabary_data: Dict = None) -> Dict[str, Any]:
