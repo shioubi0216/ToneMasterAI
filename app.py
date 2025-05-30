@@ -110,16 +110,12 @@ elif page == "Practice":
     with difficulty_tabs[0]:
         st.header("Beginner Level Practice")
         st.write("Perfect for those just starting to learn Japanese characters and basic vocabulary.")
-        
-        # Add practice recommendations
+          # Add practice recommendations
         recommended_practice = user_manager.get_recommended_practice("beginner")
         if recommended_practice:
             format_name = {
-                "kana_recognition": "Listen & Recognize Kana",
                 "kana_matching": "Match Hiragana & Katakana",
-                "simple_vocabulary": "Basic Word Practice",
-                "word_image_matching": "Match Words with Images",
-                "listen_and_choose": "Listen and Choose"
+                "simple_vocabulary": "Basic Word Practice"
             }.get(recommended_practice, recommended_practice.replace("_", " ").title())
             
             st.info(f"💡 Recommended: Try '{format_name}' to improve your skills!")
@@ -130,42 +126,14 @@ elif page == "Practice":
             "Choose practice type:",
             beginner_activities,
             format_func=lambda x: {
-                "kana_recognition": "Listen & Recognize Kana",
                 "kana_matching": "Match Hiragana & Katakana",
-                "simple_vocabulary": "Basic Word Practice",
-                "word_image_matching": "Match Words with Images",
-                "listen_and_choose": "Listen and Choose"
+                "simple_vocabulary": "Basic Word Practice"
             }.get(x, x.replace("_", " ").title())
         )
-        
-        # Start practice session button
+          # Start practice session button
         if st.button("Start Beginner Practice"):
             # Create practice exercise based on selected type
-            if beginner_practice_type == "kana_recognition":
-                # Choose a random syllabary type for this exercise
-                target_syllabary = "hiragana" if random.random() > 0.5 else "katakana"
-                syllabary_data = syllabary.hiragana if target_syllabary == "hiragana" else syllabary.katakana
-                exercise = practice_manager.generate_exercise("kana_recognition", "beginner", syllabary_data)
-                
-                st.write(f"## {exercise['question']}")
-                user_answer = st.radio("Select the correct character:", exercise['options'])
-                
-                check_col1, check_col2 = st.columns([1, 4])
-                with check_col1:
-                    if st.button("Check Answer", key="beginner_check"):
-                        if user_answer == exercise['answer']:
-                            st.success("Correct! 🎉")
-                            st.session_state.last_result = True
-                            # Record successful practice result
-                            user_manager.record_practice_result("beginner", "kana_recognition", True, exercise['answer'])
-                        else:
-                            st.error(f"Not quite. The correct answer is '{exercise['answer']}'")
-                            st.session_state.last_result = False
-                            # Record unsuccessful practice result
-                            user_manager.record_practice_result("beginner", "kana_recognition", False, exercise['answer'])
-                        st.info(exercise['explanation'])
-                
-            elif beginner_practice_type == "kana_matching":
+            if beginner_practice_type == "kana_matching":
                 exercise = practice_manager.generate_exercise("kana_matching", "beginner", 
                                                             {"hiragana": syllabary.hiragana, "katakana": syllabary.katakana})
                 
@@ -208,45 +176,17 @@ elif page == "Practice":
                         # Track progress
                         user_manager.record_practice_result("beginner", "simple_vocabulary", False, exercise['question'])
                     st.info(exercise['explanation'])
-            
-            elif beginner_practice_type == "listen_and_choose":
-                exercise = practice_manager.generate_listen_and_choose_exercise()
-                
-                st.write(f"## {exercise['question']}")
-                
-                # In a real implementation, this would play actual audio
-                st.info(f"Listen to the word: {exercise['japanese_text']}")
-                
-                user_answer = st.radio("Select the meaning:", exercise['options'])
-                
-                if st.button("Check Answer", key="listen_check"):
-                    if user_answer == exercise['answer']:
-                        st.success("Correct! 🎉")
-                        st.session_state.last_result = True
-                        # Record the successful practice result
-                        user_manager.record_practice_result("beginner", "listen_and_choose", True, exercise['japanese_text'])
-                    else:
-                        st.error(f"Not quite. The correct answer is '{exercise['answer']}'")
-                        st.session_state.last_result = False
-                        # Record the unsuccessful practice result
-                        user_manager.record_practice_result("beginner", "listen_and_choose", False, exercise['japanese_text'])
-                    st.info(exercise['explanation'])
     
     # Intermediate tab
     with difficulty_tabs[1]:
         st.header("Intermediate Level Practice")
         st.write("For learners who have mastered the basics and are ready for more complex patterns.")
-        
-        # Add practice recommendations
+          # Add practice recommendations
         recommended_practice = user_manager.get_recommended_practice("intermediate")
         if recommended_practice:
             format_name = {
                 "common_phrases": "Common Japanese Phrases",
-                "vocabulary_categories": "Vocabulary by Category",
-                "sentence_completion": "Complete the Sentence",
-                "speed_challenge": "Speed Recognition Challenge",
-                "special_kana_combinations": "Special Kana Combinations",
-                "listening_comprehension": "Listening Comprehension"
+                "vocabulary_categories": "Vocabulary by Category"
             }.get(recommended_practice, recommended_practice.replace("_", " ").title())
             
             st.info(f"💡 Recommended: Try '{format_name}' to improve your skills!")
@@ -258,15 +198,10 @@ elif page == "Practice":
             intermediate_activities,
             format_func=lambda x: {
                 "common_phrases": "Common Japanese Phrases",
-                "vocabulary_categories": "Vocabulary by Category",
-                "sentence_completion": "Complete the Sentence",
-                "speed_challenge": "Speed Recognition Challenge",
-                "special_kana_combinations": "Special Kana Combinations",
-                "listening_comprehension": "Listening Comprehension"
+                "vocabulary_categories": "Vocabulary by Category"
             }.get(x, x.replace("_", " ").title())
         )
-        
-        # Start practice session button
+          # Start practice session button
         if st.button("Start Intermediate Practice"):
             if intermediate_practice_type == "vocabulary_categories":
                 exercise = practice_manager.generate_exercise("vocabulary_categories", "intermediate")
@@ -320,228 +255,71 @@ elif page == "Practice":
                         st.session_state.last_result = False
                         # Record unsuccessful practice result
                         user_manager.record_practice_result("intermediate", "common_phrases", False, phrase)
-            
-            elif intermediate_practice_type == "sentence_completion":
-                # Get a simple sentence from the Tatoeba database
-                if practice_manager.sentences["intermediate"]:
-                    sentence = random.choice(practice_manager.sentences["intermediate"])
-                    
-                    # Split sentence into words (simplified approach)
-                    words = sentence["text"].replace("。", "").split()
-                    
-                    if len(words) > 2:  # Ensure sentence has enough words
-                        # Choose a random word to blank out
-                        blank_index = random.randint(0, len(words) - 1)
-                        correct_word = words[blank_index]
-                        
-                        # Create the question by replacing the word with a blank
-                        words[blank_index] = "＿＿＿"
-                        question_text = " ".join(words)
-                        
-                        st.write(f"## Complete the sentence: {question_text}")
-                        
-                        # Add options (simplified)
-                        options = [correct_word]
-                        # Add some distractors
-                        for _ in range(3):
-                            if practice_manager.sentences["beginner"]:
-                                distractor_sentence = random.choice(practice_manager.sentences["beginner"])
-                                distractor_words = distractor_sentence["text"].replace("。", "").split()
-                                if distractor_words:
-                                    options.append(random.choice(distractor_words))
-                        
-                        # Ensure we have 4 options
-                        while len(options) < 4:
-                            options.append("わたし")  # Add a common word as fallback
-                        
-                        user_answer = st.radio("Select the missing word:", options)
-                        
-                        if st.button("Check Answer", key="completion_check"):
-                            if user_answer == correct_word:
-                                st.success("Correct! 🎉")
-                                st.session_state.last_result = True
-                            else:
-                                st.error(f"Not quite. The correct answer is '{correct_word}'")
-                                st.session_state.last_result = False
-                                
-                            # Show the complete sentence
-                            st.info(f"Complete sentence: {sentence['text']}")
-    
-    # Advanced tab
+      # Advanced tab
     with difficulty_tabs[2]:
         st.header("Advanced Level Practice")
-        st.write("Challenge yourself with complex grammar, conversations, and reading comprehension.")
-        
-        # Add practice recommendations for advanced level
-        recommended_practice = user_manager.get_recommended_practice("advanced")
-        if recommended_practice:
-            format_name = {
-                "dialogue_comprehension": "Dialogue Comprehension",
-                "grammar_application": "Grammar Usage",
-                "sentence_creation": "Create Sentences",
-                "verb_conjugation": "Verb Conjugation",
-                "reading_comprehension": "Reading Comprehension",
-                "speech_practice": "Speech Practice"
-            }.get(recommended_practice, recommended_practice.replace("_", " ").title())
-            
-            st.info(f"💡 Recommended: Try '{format_name}' to improve your skills!")
-        
-        # Practice types for advanced level
+        st.write("Challenge yourself with advanced Japanese exercises.")
+
+        # 取得可用練習類型
         advanced_activities = practice_manager.get_practice_activities("advanced")
         advanced_practice_type = st.selectbox(
             "Choose practice type:",
             advanced_activities,
             format_func=lambda x: {
-                "dialogue_comprehension": "Dialogue Comprehension",
-                "grammar_application": "Grammar Usage",
                 "sentence_creation": "Create Sentences",
-                "verb_conjugation": "Verb Conjugation",
-                "reading_comprehension": "Reading Comprehension",
-                "speech_practice": "Speech Practice"
+                "grammar_application": "Grammar Usage",
+                "dialogue_comprehension": "Dialogue Comprehension"
             }.get(x, x.replace("_", " ").title())
         )
-        
-        # Start practice session button
+
         if st.button("Start Advanced Practice"):
-            if advanced_practice_type == "dialogue_comprehension":
-                exercise = practice_manager.generate_dialogue_comprehension()
-                
-                st.write("## Read the following dialogue:")
-                dialogue_container = st.container()
-                with dialogue_container:
-                    for line in exercise["dialogue"]:
-                        st.write(f"**{line['speaker']}**: {line['text']}")
-                
-                st.write(f"**Question**: {exercise['question']}")
-                user_answer = st.radio("Select your answer:", exercise['options'])
-                
-                if st.button("Check Answer", key="dialogue_check"):
-                    if user_answer == exercise['answer']:
-                        st.success("Correct! 🎉")
+            if advanced_practice_type == "sentence_creation":
+                exercise = practice_manager.generate_sentence_creation_exercise()
+                st.write(f"### Scenario: {exercise['scenario']}")
+                st.write(f"**Vocabulary to use:** {', '.join(exercise['vocabulary'])}")
+                user_sentence = st.text_area("Write your sentence in Japanese:")
+                if st.button("Check Sentence", key="sentence_creation_check"):
+                    if user_sentence.strip():
+                        st.success("Thank you for your answer! Here's an example:")
+                        st.info(f"Example: {exercise['example']}")
+                        st.info(f"Translation: {exercise['translation']}")
                         st.session_state.last_result = True
+                        user_manager.record_practice_result("advanced", "sentence_creation", True, user_sentence)
                     else:
-                        st.error(f"Not quite. The correct answer is '{exercise['answer']}'")
+                        st.error("Please enter a sentence.")
                         st.session_state.last_result = False
-                    st.info(exercise['explanation'])
-            
+                        user_manager.record_practice_result("advanced", "sentence_creation", False, user_sentence)
             elif advanced_practice_type == "grammar_application":
                 exercise = practice_manager.generate_grammar_exercise()
-                
-                st.write(f"## {exercise['question']}")
+                st.write(f"### {exercise['question']}")
                 user_answer = st.radio("Select the correct answer:", exercise['options'])
-                
                 if st.button("Check Answer", key="grammar_check"):
                     if user_answer == exercise['answer']:
                         st.success("Correct! 🎉")
                         st.session_state.last_result = True
+                        user_manager.record_practice_result("advanced", "grammar_application", True, exercise['question'])
                     else:
                         st.error(f"Not quite. The correct answer is '{exercise['answer']}'")
                         st.session_state.last_result = False
+                        user_manager.record_practice_result("advanced", "grammar_application", False, exercise['question'])
                     st.info(exercise['explanation'])
-            
-            elif advanced_practice_type == "sentence_creation":
-                exercise = practice_manager.generate_sentence_creation_exercise()
-                
-                st.write(f"## Create a sentence about: {exercise['scenario']}")
-                st.write("Use these vocabulary words:")
-                for word in exercise['vocabulary']:
-                    st.write(f"- {word}")
-                
-                user_sentence = st.text_input("Your sentence:")
-                
-                if st.button("Check Sentence", key="creation_check"):
-                    # For demonstration purposes, just check if they used some of the vocabulary
-                    used_vocab = 0
-                    for word in exercise['vocabulary']:
-                        if word in user_sentence:
-                            used_vocab += 1
-                    
-                    if used_vocab >= 2:  # If they used at least 2 vocabulary words
-                        st.success("Good job! Your sentence uses the vocabulary well.")
-                        st.session_state.last_result = True
-                    else:
-                        st.warning("Try to use more of the provided vocabulary words.")
-                        st.session_state.last_result = False
-                    
-                    st.info(f"Example: {exercise['example']}\nTranslation: {exercise['translation']}")
-            
-            elif advanced_practice_type == "verb_conjugation":
-                exercise = practice_manager.generate_verb_conjugation_exercise()
-                
-                st.write(f"## {exercise['question']}")
-                user_answer = st.radio("Select the correct conjugation:", exercise['options'])
-                
-                if st.button("Check Answer", key="conjugation_check"):
+            elif advanced_practice_type == "dialogue_comprehension":
+                exercise = practice_manager.generate_dialogue_comprehension()
+                st.write("### Dialogue:")
+                for line in exercise['dialogue']:
+                    st.write(f"**{line['speaker']}:** {line['text']}")
+                st.write(f"**Question:** {exercise['question']}")
+                user_answer = st.radio("Select the correct answer:", exercise['options'])
+                if st.button("Check Answer", key="dialogue_check"):
                     if user_answer == exercise['answer']:
                         st.success("Correct! 🎉")
                         st.session_state.last_result = True
+                        user_manager.record_practice_result("advanced", "dialogue_comprehension", True, exercise['question'])
                     else:
                         st.error(f"Not quite. The correct answer is '{exercise['answer']}'")
                         st.session_state.last_result = False
+                        user_manager.record_practice_result("advanced", "dialogue_comprehension", False, exercise['question'])
                     st.info(exercise['explanation'])
-            
-            elif advanced_practice_type == "reading_comprehension":
-                exercise = practice_manager.generate_reading_comprehension_exercise()
-                
-                st.write("## Read the following passage:")
-                st.write(exercise['text'])
-                
-                st.write(f"**Question**: {exercise['question']}")
-                user_answer = st.radio("Select your answer:", exercise['options'])
-                
-                if st.button("Check Answer", key="reading_check"):
-                    if user_answer == exercise['answer']:
-                        st.success("Correct! 🎉")
-                        st.session_state.last_result = True
-                    else:
-                        st.error(f"Not quite. The correct answer is '{exercise['answer']}'")
-                        st.session_state.last_result = False
-                    st.info(exercise['explanation'])
-            
-            elif advanced_practice_type == "speech_practice":
-                exercise = practice_manager.generate_speech_practice_exercise()
-                
-                st.write(f"## {exercise['prompt']}")
-                st.write(f"### {exercise['japanese_text']}")
-                
-                # Display translation and pronunciation guidance
-                st.info(f"Translation: {exercise['translation']}")
-                st.write(f"**Pronunciation guidance**: {exercise['pronunciation_guidance']}")
-                
-                # Key vocabulary section
-                if exercise['key_vocabulary']:
-                    st.write("**Key vocabulary:**")
-                    for vocab in exercise['key_vocabulary']:
-                        st.write(f"- {vocab}")
-                
-                # In a real implementation, these would be functional
-                st.write("**Practice tools:**")
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.button("🔊 Listen to Reference", key="listen_reference")
-                with col2:
-                    st.button("🎤 Record Your Attempt", key="record_attempt")
-                
-                # Simplified assessment for demo
-                st.write("### Self-assessment")
-                confidence = st.slider("How well do you think you pronounced it?", 1, 5, 3)
-                
-                if st.button("Submit Practice", key="speech_submit"):
-                    if confidence >= 4:
-                        st.success("Great job! Keep practicing to perfect your pronunciation.")
-                        # Record a successful result for high confidence
-                        user_manager.record_practice_result("advanced", "speech_practice", True, exercise['japanese_text'])
-                    else:
-                        st.info("Practice makes perfect! Try listening to the reference again and repeating.")
-                        # Record as a learning opportunity for lower confidence
-                        user_manager.record_practice_result("advanced", "speech_practice", False, exercise['japanese_text'])
-                        
-                    # Provide encouragement regardless of confidence level
-                    st.write("**Tips for improving:**")
-                    st.write("- Practice individual sounds first, then the full sentence")
-                    st.write("- Pay attention to pitch accent and rhythm")
-                    st.write("- Record yourself and compare to native speakers")
-
 # Settings page
 elif page == "Settings":
     st.title("Settings")
@@ -562,29 +340,13 @@ elif page == "Settings":
                     if level_stats:
                         # Create a table of practice type statistics
                         data = []
-                        for practice_type, stats in level_stats.items():
-                            # Format for display
+                        for practice_type, stats in level_stats.items():                            # Format for display
                             display_name = {
-                                # Beginner
-                                "kana_recognition": "Listen & Recognize Kana",
                                 "kana_matching": "Match Hiragana & Katakana",
                                 "simple_vocabulary": "Basic Word Practice",
-                                "word_image_matching": "Match Words with Images",
-                                "listen_and_choose": "Listen and Choose",
-                                # Intermediate
                                 "common_phrases": "Common Japanese Phrases",
                                 "vocabulary_categories": "Vocabulary by Category",
-                                "sentence_completion": "Complete the Sentence",
-                                "speed_challenge": "Speed Recognition Challenge",
-                                "special_kana_combinations": "Special Kana Combinations",
-                                "listening_comprehension": "Listening Comprehension",
-                                # Advanced
-                                "dialogue_comprehension": "Dialogue Comprehension",
-                                "grammar_application": "Grammar Usage",
-                                "sentence_creation": "Create Sentences",
-                                "verb_conjugation": "Verb Conjugation",
-                                "reading_comprehension": "Reading Comprehension",
-                                "speech_practice": "Speech Practice"
+                                "sentence_creation": "Create Sentences"
                             }.get(practice_type, practice_type.replace("_", " ").title())
                             
                             # Calculate accuracy
@@ -614,7 +376,11 @@ elif page == "Settings":
                             if sorted_by_attempts:
                                 least_practiced = sorted_by_attempts[0][0]
                                 display_name = {
-                                    # Format names as above
+                                    "kana_matching": "Match Hiragana & Katakana",
+                                    "simple_vocabulary": "Basic Word Practice",
+                                    "common_phrases": "Common Japanese Phrases",
+                                    "vocabulary_categories": "Vocabulary by Category",
+                                    "sentence_creation": "Create Sentences"
                                 }.get(least_practiced, least_practiced.replace("_", " ").title())
                                 st.info(f"💡 You should try practicing '{display_name}' more often")
                             
