@@ -77,8 +77,7 @@ class AIService:
             
             The learning path should include:
             1. A recommended order for learning hiragana and katakana characters
-            2. 5 themed vocabulary groups related to their interests (with 3-4 example words each)
-            3. A suggested 2-week schedule with specific goals
+            2. 5 themed vocabulary groups related to their interests (with 3-4 example words each)            3. A suggested 2-week schedule with specific goals
             
             Make the learning path engaging and connected to the person's interests.
             """
@@ -87,3 +86,36 @@ class AIService:
         chain = LLMChain(llm=self.llm, prompt=prompt)
         response = chain.run(interests=interests_text)
         return response
+    
+    def evaluate_translation(self, original_text, reference_translation, user_translation):
+        """Evaluate if user's translation is semantically equivalent to the reference using simplified evaluation"""
+        prompt = PromptTemplate(
+            input_variables=["original", "user_translation"],
+            template="""
+            You are a professional English-Japanese translation evaluation expert. Please evaluate translation exercises according to the following rules:
+
+            Core Task:
+            I will provide a Japanese sentence as the source text
+            Then provide an English sentence as the translation answer
+            Please determine whether the English sentence correctly conveys the meaning of the Japanese sentence
+
+            Evaluation Criteria:
+            Correct: Semantic accuracy reaches 90% or above (perfect translation not required; focus is on correct core meaning)
+            Incorrect: Semantic accuracy below 90%
+
+            Response Format:
+            If translation is correct: Reply "true"
+            If translation is incorrect: Reply "false"
+            Please do not provide any additional explanation or analysis
+
+            Japanese: {original}
+            English: {user_translation}
+            """
+        )
+        
+        chain = LLMChain(llm=self.llm, prompt=prompt)
+        response = chain.run(
+            original=original_text,
+            user_translation=user_translation
+        )
+        return response.strip().lower()

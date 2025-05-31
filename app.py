@@ -267,8 +267,7 @@ elif page == "Practice":
                                 st.session_state.simple_vocab_wrong_streak += 1
                                 st.session_state.simple_vocab_right_streak = 0
                                 user_manager.record_practice_result("beginner", "simple_vocabulary", False, exercise['question'])
-                    
-                    # Show feedback and action buttons after checking the answer
+                      # Show feedback and action buttons after checking the answer
                     if st.session_state.simple_vocab_answered:
                         if st.session_state.simple_vocab_correct:
                             st.success("✅ Correct! 🎉 Great job!")
@@ -277,9 +276,8 @@ elif page == "Practice":
                             # Show recommendation if 6 correct in a row - suggest intermediate level
                             if st.session_state.simple_vocab_right_streak >= 6:
                                 st.info("🌟 Excellent! You're ready for intermediate level practice. Try switching to the 'Intermediate' tab!")
-                            
-                            # Only show Next Question for correct answers
-                            if st.button("Next Question", key="vocab_next"):
+                              # Only show Next Question for correct answers
+                            if st.button("Next Question", key="vocab_next_correct"):
                                 new_simple_vocab_question()
                                 st.rerun()
                         else:
@@ -289,8 +287,7 @@ elif page == "Practice":
                             # Show recommendation if 3 wrong in a row
                             if st.session_state.simple_vocab_wrong_streak >= 3:
                                 st.warning("🔎 Having trouble? Consider reviewing basic vocabulary or try the 'Match Hiragana & Katakana' practice first.")
-                            
-                            # Show both Try Again and Next Question for incorrect answers
+                              # Show both Try Again and Next Question for incorrect answers
                             col1, col2 = st.columns(2)
                             with col1:
                                 if st.button("Try Again", key="vocab_retry"):
@@ -298,58 +295,15 @@ elif page == "Practice":
                                     st.session_state.simple_vocab_user_answer = None
                                     st.rerun()
                             with col2:
-                                if st.button("Next Question", key="vocab_next_any"):
+                                if st.button("Next Question", key="vocab_next_incorrect"):
                                     new_simple_vocab_question()
                                     st.rerun()
         # --- End of Basic Word Practice ---
-                    
-                    # Show feedback and action buttons after checking the answer
-                    if st.session_state.simple_vocab_answered:
-                        if st.session_state.simple_vocab_correct:
-                            st.success("✅ Correct! 🎉 Great job!")
-                            st.info(exercise['explanation'])
-                            
-                            # Show recommendation if 6 correct in a row
-                            if st.session_state.simple_vocab_right_streak >= 6:
-                                st.info("🌟 You're doing great! You can try the 'Match Hiragana & Katakana' section for more practice.")
-                            
-                            # Only show Next Question for correct answers
-                            if st.button("Next Question", key="vocab_next"):
-                                new_simple_vocab_question()
-                                st.rerun()
-                        else:
-                            st.error(f"❌ Not quite. The correct answer is '{exercise['answer']}'")
-                            st.info(exercise['explanation'])
-                            
-                            # Show recommendation if 3 wrong in a row
-                            if st.session_state.simple_vocab_wrong_streak >= 3:
-                                st.warning("🔎 Having trouble? Consider reviewing the 'Learn Hiragana' and 'Learn Katakana' pages before practicing again.")
-                            
-                            # Show both Try Again and Next Question for incorrect answers
-                            col1, col2 = st.columns(2)
-                            with col1:
-                                if st.button("Try Again", key="vocab_retry"):
-                                    st.session_state.simple_vocab_answered = False
-                                    st.session_state.simple_vocab_user_answer = None
-                                    st.rerun()
-                            with col2:
-                                if st.button("Next Question", key="vocab_next_any"):
-                                    new_simple_vocab_question()
-                                    st.rerun()
-        # --- End of Basic Word Practice ---
+        
     # Intermediate tab
     with difficulty_tabs[1]:
         st.header("Intermediate Level Practice")
         st.write("For learners who have mastered the basics and are ready for more complex patterns.")
-          # Add practice recommendations
-        recommended_practice = user_manager.get_recommended_practice("intermediate")
-        if recommended_practice:
-            format_name = {
-                "common_phrases": "Common Japanese Phrases",
-                "vocabulary_categories": "Vocabulary by Category"
-            }.get(recommended_practice, recommended_practice.replace("_", " ").title())
-            
-            st.info(f"💡 Recommended: Try '{format_name}' to improve your skills!")
         
         # Practice types for intermediate level
         intermediate_activities = practice_manager.get_practice_activities("intermediate")
@@ -361,40 +315,28 @@ elif page == "Practice":
                 "vocabulary_categories": "Vocabulary by Category"
             }.get(x, x.replace("_", " ").title())
         )
-          # Start practice session button
-        if st.button("Start Intermediate Practice"):
-            if intermediate_practice_type == "vocabulary_categories":
-                exercise = practice_manager.generate_exercise("vocabulary_categories", "intermediate")
-                
-                st.write(f"## {exercise['question']}")
-                
-                # For multiple answer exercises
-                if exercise.get('multiple_answers', False):
-                    selected_options = []
-                    for option in exercise['options']:
-                        if st.checkbox(option, key=f"option_{option}"):
-                            selected_options.append(option)
-                    
-                    if st.button("Check Answers", key="categories_check"):
-                        if set(selected_options) == set(exercise['answers']):
-                            st.success("All correct! 🎉")
-                            st.session_state.last_result = True
-                            # Record successful practice result
-                            user_manager.record_practice_result("intermediate", "vocabulary_categories", True, exercise['question'])
-                        else:
-                            st.error(f"Not quite. The correct answers are: {', '.join(exercise['answers'])}")
-                            st.session_state.last_result = False
-                            # Record unsuccessful practice result
-                            user_manager.record_practice_result("intermediate", "vocabulary_categories", False, exercise['question'])
-                        st.info(exercise['explanation'])
-                        
-            elif intermediate_practice_type == "common_phrases":
+
+        # --- Common Phrases Practice ---
+        if intermediate_practice_type == "common_phrases":
+            # State management for common phrases
+            if 'phrases_exercise' not in st.session_state:
+                st.session_state.phrases_exercise = None
+            if 'phrases_answered' not in st.session_state:
+                st.session_state.phrases_answered = False
+            if 'phrases_correct' not in st.session_state:
+                st.session_state.phrases_correct = None
+            if 'phrases_user_answer' not in st.session_state:
+                st.session_state.phrases_user_answer = None
+            if 'phrases_wrong_streak' not in st.session_state:
+                st.session_state.phrases_wrong_streak = 0
+            if 'phrases_right_streak' not in st.session_state:
+                st.session_state.phrases_right_streak = 0
+            if 'phrases_started' not in st.session_state:
+                st.session_state.phrases_started = False
+
+            def new_phrases_question():
                 # Choose a random phrase
                 phrase, meaning = random.choice(list(practice_manager.common_phrases.items()))
-                
-                # Create a listening exercise (simulated)
-                st.write("## Listen to the phrase and select its meaning")
-                st.write(f"Phrase: {phrase}")
                 
                 # Create options (1 correct + 3 random)
                 options = [meaning]
@@ -402,19 +344,184 @@ elif page == "Practice":
                 options.extend(random.sample(other_meanings, min(3, len(other_meanings))))
                 random.shuffle(options)
                 
-                user_answer = st.radio("Select the meaning:", options)
-                
-                if st.button("Check Answer", key="phrases_check"):
-                    if user_answer == meaning:
-                        st.success("Correct! 🎉")
-                        st.session_state.last_result = True
-                        # Record successful practice result
-                        user_manager.record_practice_result("intermediate", "common_phrases", True, phrase)
-                    else:
-                        st.error(f"Not quite. The correct answer is '{meaning}'")
-                        st.session_state.last_result = False
-                        # Record unsuccessful practice result
-                        user_manager.record_practice_result("intermediate", "common_phrases", False, phrase)
+                st.session_state.phrases_exercise = {
+                    "phrase": phrase,
+                    "answer": meaning,
+                    "options": options
+                }
+                st.session_state.phrases_answered = False
+                st.session_state.phrases_correct = None
+                st.session_state.phrases_user_answer = None
+
+            # Show Start button first
+            if not st.session_state.phrases_started:
+                if st.button("Start Intermediate Practice", key="phrases_start"):
+                    st.session_state.phrases_started = True
+                    new_phrases_question()
+                    st.rerun()
+            else:
+                # Show the exercise
+                if st.session_state.phrases_exercise:
+                    exercise = st.session_state.phrases_exercise
+                    st.write("## Listen to the phrase and select its meaning")
+                    st.write(f"**Phrase:** {exercise['phrase']}")
+                    
+                    user_answer = st.radio(
+                        "Select the meaning:", 
+                        exercise['options'],
+                        index=exercise['options'].index(st.session_state.phrases_user_answer) if st.session_state.phrases_user_answer in exercise['options'] else 0
+                    )
+
+                    # Only show 'Check Answer' if the user hasn't answered yet
+                    if not st.session_state.phrases_answered:
+                        if st.button("Check Answer", key="phrases_check"):
+                            st.session_state.phrases_user_answer = user_answer
+                            st.session_state.phrases_answered = True
+                            if user_answer == exercise['answer']:
+                                st.session_state.phrases_correct = True
+                                st.session_state.phrases_right_streak += 1
+                                st.session_state.phrases_wrong_streak = 0
+                                user_manager.record_practice_result("intermediate", "common_phrases", True, exercise['phrase'])
+                            else:
+                                st.session_state.phrases_correct = False
+                                st.session_state.phrases_wrong_streak += 1
+                                st.session_state.phrases_right_streak = 0
+                                user_manager.record_practice_result("intermediate", "common_phrases", False, exercise['phrase'])
+                    
+                    # Show feedback and action buttons after checking the answer
+                    if st.session_state.phrases_answered:
+                        if st.session_state.phrases_correct:
+                            st.success("✅ Correct! 🎉 Great job!")
+                            st.info(f"'{exercise['phrase']}' means '{exercise['answer']}'")
+                            
+                            # Show recommendation if 6 correct in a row
+                            if st.session_state.phrases_right_streak >= 6:
+                                st.info("🌟 Excellent! You're mastering common phrases. Try the 'Vocabulary by Category' or move to Advanced level!")
+                            
+                            # Only show Next Question for correct answers
+                            if st.button("Next Question", key="phrases_next"):
+                                new_phrases_question()
+                                st.rerun()
+                        else:
+                            st.error(f"❌ Not quite. The correct answer is '{exercise['answer']}'")
+                            st.info(f"'{exercise['phrase']}' means '{exercise['answer']}'")
+                            
+                            # Show recommendation if 3 wrong in a row
+                            if st.session_state.phrases_wrong_streak >= 3:
+                                st.warning("🔎 Having trouble? Consider reviewing basic phrases or try the 'Vocabulary by Category' practice.")
+                            
+                            # Show both Try Again and Next Question for incorrect answers
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                if st.button("Try Again", key="phrases_retry"):
+                                    st.session_state.phrases_answered = False
+                                    st.session_state.phrases_user_answer = None
+                                    st.rerun()
+                            with col2:
+                                if st.button("Next Question", key="phrases_next_any"):
+                                    new_phrases_question()
+                                    st.rerun()
+        # --- End of Common Phrases Practice ---
+
+        # --- Vocabulary Categories Practice ---
+        elif intermediate_practice_type == "vocabulary_categories":
+            # State management for vocabulary categories
+            if 'vocab_cat_exercise' not in st.session_state:
+                st.session_state.vocab_cat_exercise = None
+            if 'vocab_cat_answered' not in st.session_state:
+                st.session_state.vocab_cat_answered = False
+            if 'vocab_cat_correct' not in st.session_state:
+                st.session_state.vocab_cat_correct = None
+            if 'vocab_cat_selected' not in st.session_state:
+                st.session_state.vocab_cat_selected = []
+            if 'vocab_cat_wrong_streak' not in st.session_state:
+                st.session_state.vocab_cat_wrong_streak = 0
+            if 'vocab_cat_right_streak' not in st.session_state:
+                st.session_state.vocab_cat_right_streak = 0
+            if 'vocab_cat_started' not in st.session_state:
+                st.session_state.vocab_cat_started = False
+
+            def new_vocab_cat_question():
+                st.session_state.vocab_cat_exercise = practice_manager.generate_exercise("vocabulary_categories", "intermediate")
+                st.session_state.vocab_cat_answered = False
+                st.session_state.vocab_cat_correct = None
+                st.session_state.vocab_cat_selected = []
+
+            # Show Start button first
+            if not st.session_state.vocab_cat_started:
+                if st.button("Start Intermediate Practice", key="vocab_cat_start"):
+                    st.session_state.vocab_cat_started = True
+                    new_vocab_cat_question()
+                    st.rerun()
+            else:
+                # Show the exercise
+                if st.session_state.vocab_cat_exercise:
+                    exercise = st.session_state.vocab_cat_exercise
+                    st.write(f"## {exercise['question']}")
+                    
+                    # For multiple answer exercises
+                    if exercise.get('multiple_answers', False):
+                        # Reset selected options if starting fresh
+                        if not st.session_state.vocab_cat_answered and not st.session_state.vocab_cat_selected:
+                            st.session_state.vocab_cat_selected = []
+                        
+                        # Show checkboxes for multiple selection
+                        selected_options = []
+                        for i, option in enumerate(exercise['options']):
+                            if st.checkbox(option, key=f"vocab_cat_option_{i}", value=option in st.session_state.vocab_cat_selected):
+                                selected_options.append(option)
+                        
+                        st.session_state.vocab_cat_selected = selected_options
+
+                        # Only show 'Check Answers' if the user hasn't answered yet
+                        if not st.session_state.vocab_cat_answered:
+                            if st.button("Check Answers", key="vocab_cat_check"):
+                                st.session_state.vocab_cat_answered = True
+                                if set(selected_options) == set(exercise['answers']):
+                                    st.session_state.vocab_cat_correct = True
+                                    st.session_state.vocab_cat_right_streak += 1
+                                    st.session_state.vocab_cat_wrong_streak = 0
+                                    user_manager.record_practice_result("intermediate", "vocabulary_categories", True, exercise['question'])
+                                else:
+                                    st.session_state.vocab_cat_correct = False
+                                    st.session_state.vocab_cat_wrong_streak += 1
+                                    st.session_state.vocab_cat_right_streak = 0
+                                    user_manager.record_practice_result("intermediate", "vocabulary_categories", False, exercise['question'])
+                    
+                    # Show feedback and action buttons after checking the answer
+                    if st.session_state.vocab_cat_answered:
+                        if st.session_state.vocab_cat_correct:
+                            st.success("✅ All correct! 🎉 Great job!")
+                            st.info(exercise['explanation'])
+                            
+                            # Show recommendation if 6 correct in a row
+                            if st.session_state.vocab_cat_right_streak >= 6:
+                                st.info("🌟 Amazing! You're mastering vocabulary categories. Ready for Advanced level practice!")
+                            
+                            # Only show Next Question for correct answers
+                            if st.button("Next Question", key="vocab_cat_next"):
+                                new_vocab_cat_question()
+                                st.rerun()
+                        else:
+                            st.error(f"❌ Not quite. The correct answers are: {', '.join(exercise['answers'])}")
+                            st.info(exercise['explanation'])
+                            
+                            # Show recommendation if 3 wrong in a row
+                            if st.session_state.vocab_cat_wrong_streak >= 3:
+                                st.warning("🔎 Having trouble? Consider reviewing vocabulary categories or try the 'Common Japanese Phrases' practice.")
+                            
+                            # Show both Try Again and Next Question for incorrect answers
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                if st.button("Try Again", key="vocab_cat_retry"):
+                                    st.session_state.vocab_cat_answered = False
+                                    st.session_state.vocab_cat_selected = []
+                                    st.rerun()
+                            with col2:
+                                if st.button("Next Question", key="vocab_cat_next_any"):
+                                    new_vocab_cat_question()
+                                    st.rerun()
+        # --- End of Vocabulary Categories Practice ---
       # Advanced tab
     with difficulty_tabs[2]:
         st.header("Advanced Level Practice")
@@ -426,60 +533,312 @@ elif page == "Practice":
             "Choose practice type:",
             advanced_activities,
             format_func=lambda x: {
-                "sentence_creation": "Create Sentences",
+                "translation_practice": "Translation Practice",
                 "grammar_application": "Grammar Usage",
-                "dialogue_comprehension": "Dialogue Comprehension"
-            }.get(x, x.replace("_", " ").title())
+                "dialogue_comprehension": "Dialogue Comprehension"            }.get(x, x.replace("_", " ").title())
         )
+          # --- Translation Practice with State Management ---
+        if advanced_practice_type == "translation_practice":
+            # State management for translation practice
+            if 'translation_exercise' not in st.session_state:
+                st.session_state.translation_exercise = None
+            if 'translation_answered' not in st.session_state:
+                st.session_state.translation_answered = False
+            if 'translation_correct' not in st.session_state:
+                st.session_state.translation_correct = None
+            if 'translation_user_answer' not in st.session_state:
+                st.session_state.translation_user_answer = ""
+            if 'translation_wrong_streak' not in st.session_state:
+                st.session_state.translation_wrong_streak = 0
+            if 'translation_right_streak' not in st.session_state:
+                st.session_state.translation_right_streak = 0
+            if 'translation_started' not in st.session_state:
+                st.session_state.translation_started = False
+            if 'translation_evaluation' not in st.session_state:
+                st.session_state.translation_evaluation = None
 
-        if st.button("Start Advanced Practice"):
-            if advanced_practice_type == "sentence_creation":
-                exercise = practice_manager.generate_sentence_creation_exercise()
-                st.write(f"### Scenario: {exercise['scenario']}")
-                st.write(f"**Vocabulary to use:** {', '.join(exercise['vocabulary'])}")
-                user_sentence = st.text_area("Write your sentence in Japanese:")
-                if st.button("Check Sentence", key="sentence_creation_check"):
-                    if user_sentence.strip():
-                        st.success("Thank you for your answer! Here's an example:")
-                        st.info(f"Example: {exercise['example']}")
-                        st.info(f"Translation: {exercise['translation']}")
-                        st.session_state.last_result = True
-                        user_manager.record_practice_result("advanced", "sentence_creation", True, user_sentence)
-                    else:
-                        st.error("Please enter a sentence.")
-                        st.session_state.last_result = False
-                        user_manager.record_practice_result("advanced", "sentence_creation", False, user_sentence)
-            elif advanced_practice_type == "grammar_application":
-                exercise = practice_manager.generate_grammar_exercise()
-                st.write(f"### {exercise['question']}")
-                user_answer = st.radio("Select the correct answer:", exercise['options'])
-                if st.button("Check Answer", key="grammar_check"):
-                    if user_answer == exercise['answer']:
-                        st.success("Correct! 🎉")
-                        st.session_state.last_result = True
-                        user_manager.record_practice_result("advanced", "grammar_application", True, exercise['question'])
-                    else:
-                        st.error(f"Not quite. The correct answer is '{exercise['answer']}'")
-                        st.session_state.last_result = False
-                        user_manager.record_practice_result("advanced", "grammar_application", False, exercise['question'])
-                    st.info(exercise['explanation'])
-            elif advanced_practice_type == "dialogue_comprehension":
-                exercise = practice_manager.generate_dialogue_comprehension()
-                st.write("### Dialogue:")
-                for line in exercise['dialogue']:
-                    st.write(f"**{line['speaker']}:** {line['text']}")
-                st.write(f"**Question:** {exercise['question']}")
-                user_answer = st.radio("Select the correct answer:", exercise['options'])
-                if st.button("Check Answer", key="dialogue_check"):
-                    if user_answer == exercise['answer']:
-                        st.success("Correct! 🎉")
-                        st.session_state.last_result = True
-                        user_manager.record_practice_result("advanced", "dialogue_comprehension", True, exercise['question'])
-                    else:
-                        st.error(f"Not quite. The correct answer is '{exercise['answer']}'")
-                        st.session_state.last_result = False
-                        user_manager.record_practice_result("advanced", "dialogue_comprehension", False, exercise['question'])
-                    st.info(exercise['explanation'])
+            def new_translation_question():
+                st.session_state.translation_exercise = practice_manager.generate_translation_exercise()
+                st.session_state.translation_answered = False
+                st.session_state.translation_correct = None
+                st.session_state.translation_user_answer = ""
+                st.session_state.translation_evaluation = None
+
+            # Show Start button first
+            if not st.session_state.translation_started:
+                if st.button("Start Translation Practice", key="translation_start"):
+                    st.session_state.translation_started = True
+                    new_translation_question()
+                    st.rerun()
+            else:
+                # Show the exercise
+                if st.session_state.translation_exercise:
+                    exercise = st.session_state.translation_exercise
+                    st.write(f"### Translate this Japanese sentence to English:")
+                    st.write(f"**Japanese:** {exercise['japanese']}")
+                    
+                    # Use session state for text area value
+                    user_translation = st.text_area(
+                        "Your English translation:",
+                        value=st.session_state.translation_user_answer,
+                        key="translation_input"
+                    )
+                    
+                    # Update session state when user types
+                    if user_translation != st.session_state.translation_user_answer:
+                        st.session_state.translation_user_answer = user_translation
+
+                    # Only show 'Check Translation' if the user hasn't answered yet
+                    if not st.session_state.translation_answered:
+                        if st.button("Check Translation", key="translation_check"):
+                            if user_translation.strip():
+                                # Use AI to evaluate the translation
+                                evaluation = practice_manager.evaluate_user_translation(
+                                    exercise['japanese'], 
+                                    exercise['reference_english'], 
+                                    user_translation
+                                )
+                                
+                                st.session_state.translation_evaluation = evaluation
+                                st.session_state.translation_answered = True
+                                
+                                if evaluation['is_correct']:
+                                    st.session_state.translation_correct = True
+                                    st.session_state.translation_right_streak += 1
+                                    st.session_state.translation_wrong_streak = 0
+                                    user_manager.record_practice_result("advanced", "translation_practice", True, user_translation)
+                                else:
+                                    st.session_state.translation_correct = False
+                                    st.session_state.translation_wrong_streak += 1
+                                    st.session_state.translation_right_streak = 0
+                                    user_manager.record_practice_result("advanced", "translation_practice", False, user_translation)
+                                st.rerun()
+                            else:
+                                st.error("Please enter a translation.")
+
+                    # Show feedback and action buttons after checking the answer
+                    if st.session_state.translation_answered and st.session_state.translation_evaluation:
+                        evaluation = st.session_state.translation_evaluation
+                        if st.session_state.translation_correct:
+                            st.success(f"✅ {evaluation['result']}: {evaluation['explanation']}")
+                            st.info(f"**Reference translation:** {exercise['reference_english']}")
+                            
+                            # Show recommendation if 6 correct in a row - suggest different practice
+                            if st.session_state.translation_right_streak >= 6:
+                                st.info("🌟 Excellent! You're mastering translation! Try switching to 'Grammar Usage' or 'Dialogue Comprehension' for more challenge!")
+                            
+                            # Only show Next Question for correct answers
+                            if st.button("Next Question", key="translation_next_correct"):
+                                new_translation_question()
+                                st.rerun()
+                        else:
+                            st.error(f"❌ {evaluation['result']}: {evaluation['explanation']}")
+                            st.info(f"**Reference translation:** {exercise['reference_english']}")
+                            
+                            # Show recommendation if 3 wrong in a row
+                            if st.session_state.translation_wrong_streak >= 3:
+                                st.warning("🔎 Having trouble with translations? Consider practicing vocabulary first or try starting with simpler sentences.")
+                            
+                            # Show both Try Again and Next Question for incorrect answers
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                if st.button("Try Again", key="translation_retry"):
+                                    st.session_state.translation_answered = False
+                                    st.session_state.translation_evaluation = None
+                                    # Keep the user's text in the text area for retry
+                                    st.rerun()
+                            with col2:
+                                if st.button("Next Question", key="translation_next_incorrect"):
+                                    new_translation_question()
+                                    st.rerun()        # --- End of Translation Practice ---
+        elif advanced_practice_type == "grammar_application":
+            # State management for grammar practice
+            if 'grammar_exercise' not in st.session_state:
+                st.session_state.grammar_exercise = None
+            if 'grammar_answered' not in st.session_state:
+                st.session_state.grammar_answered = False
+            if 'grammar_correct' not in st.session_state:
+                st.session_state.grammar_correct = None
+            if 'grammar_user_answer' not in st.session_state:
+                st.session_state.grammar_user_answer = None
+            if 'grammar_wrong_streak' not in st.session_state:
+                st.session_state.grammar_wrong_streak = 0
+            if 'grammar_right_streak' not in st.session_state:
+                st.session_state.grammar_right_streak = 0
+            if 'grammar_started' not in st.session_state:
+                st.session_state.grammar_started = False
+
+            def new_grammar_question():
+                st.session_state.grammar_exercise = practice_manager.generate_grammar_exercise()
+                st.session_state.grammar_answered = False
+                st.session_state.grammar_correct = None
+                st.session_state.grammar_user_answer = None
+
+            # Show Start button first
+            if not st.session_state.grammar_started:
+                if st.button("Start Grammar Practice", key="grammar_start"):
+                    st.session_state.grammar_started = True
+                    new_grammar_question()
+                    st.rerun()
+            else:
+                # Show the exercise
+                if st.session_state.grammar_exercise:
+                    exercise = st.session_state.grammar_exercise
+                    st.write(f"### {exercise['question']}")
+                    
+                    user_answer = st.radio(
+                        "Select the correct answer:",
+                        exercise['options'],
+                        index=exercise['options'].index(st.session_state.grammar_user_answer) if st.session_state.grammar_user_answer in exercise['options'] else 0
+                    )
+
+                    # Only show 'Check Answer' if the user hasn't answered yet
+                    if not st.session_state.grammar_answered:
+                        if st.button("Check Answer", key="grammar_check"):
+                            st.session_state.grammar_user_answer = user_answer
+                            st.session_state.grammar_answered = True
+                            if user_answer == exercise['answer']:
+                                st.session_state.grammar_correct = True
+                                st.session_state.grammar_right_streak += 1
+                                st.session_state.grammar_wrong_streak = 0
+                                user_manager.record_practice_result("advanced", "grammar_application", True, exercise['question'])
+                            else:
+                                st.session_state.grammar_correct = False
+                                st.session_state.grammar_wrong_streak += 1
+                                st.session_state.grammar_right_streak = 0
+                                user_manager.record_practice_result("advanced", "grammar_application", False, exercise['question'])
+                            st.rerun()
+
+                    # Show feedback and action buttons after checking the answer
+                    if st.session_state.grammar_answered:
+                        if st.session_state.grammar_correct:
+                            st.success("✅ Correct! 🎉 Great job!")
+                            st.info(exercise['explanation'])
+                            
+                            # Show recommendation if 6 correct in a row
+                            if st.session_state.grammar_right_streak >= 6:
+                                st.info("🌟 Excellent! You're mastering grammar! Try switching to 'Translation Practice' or 'Dialogue Comprehension' for more challenge!")
+                            
+                            # Only show Next Question for correct answers
+                            if st.button("Next Question", key="grammar_next_correct"):
+                                new_grammar_question()
+                                st.rerun()
+                        else:
+                            st.error(f"❌ Not quite. The correct answer is '{exercise['answer']}'")
+                            st.info(exercise['explanation'])
+                            
+                            # Show recommendation if 3 wrong in a row
+                            if st.session_state.grammar_wrong_streak >= 3:
+                                st.warning("🔎 Having trouble with grammar? Consider reviewing basic vocabulary and sentence patterns first.")
+                            
+                            # Show both Try Again and Next Question for incorrect answers
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                if st.button("Try Again", key="grammar_retry"):
+                                    st.session_state.grammar_answered = False
+                                    st.session_state.grammar_user_answer = None
+                                    st.rerun()
+                            with col2:
+                                if st.button("Next Question", key="grammar_next_incorrect"):
+                                    new_grammar_question()
+                                    st.rerun()
+        
+        elif advanced_practice_type == "dialogue_comprehension":
+            # State management for dialogue practice
+            if 'dialogue_exercise' not in st.session_state:
+                st.session_state.dialogue_exercise = None
+            if 'dialogue_answered' not in st.session_state:
+                st.session_state.dialogue_answered = False
+            if 'dialogue_correct' not in st.session_state:
+                st.session_state.dialogue_correct = None
+            if 'dialogue_user_answer' not in st.session_state:
+                st.session_state.dialogue_user_answer = None
+            if 'dialogue_wrong_streak' not in st.session_state:
+                st.session_state.dialogue_wrong_streak = 0
+            if 'dialogue_right_streak' not in st.session_state:
+                st.session_state.dialogue_right_streak = 0
+            if 'dialogue_started' not in st.session_state:
+                st.session_state.dialogue_started = False
+
+            def new_dialogue_question():
+                st.session_state.dialogue_exercise = practice_manager.generate_dialogue_comprehension()
+                st.session_state.dialogue_answered = False
+                st.session_state.dialogue_correct = None
+                st.session_state.dialogue_user_answer = None
+
+            # Show Start button first
+            if not st.session_state.dialogue_started:
+                if st.button("Start Dialogue Practice", key="dialogue_start"):
+                    st.session_state.dialogue_started = True
+                    new_dialogue_question()
+                    st.rerun()
+            else:
+                # Show the exercise
+                if st.session_state.dialogue_exercise:
+                    exercise = st.session_state.dialogue_exercise
+                    st.write("### Dialogue:")
+                    for line in exercise['dialogue']:
+                        st.write(f"**{line['speaker']}:** {line['text']}")
+                    st.write(f"**Question:** {exercise['question']}")
+                    
+                    user_answer = st.radio(
+                        "Select the correct answer:",
+                        exercise['options'],
+                        index=exercise['options'].index(st.session_state.dialogue_user_answer) if st.session_state.dialogue_user_answer in exercise['options'] else 0
+                    )
+
+                    # Only show 'Check Answer' if the user hasn't answered yet
+                    if not st.session_state.dialogue_answered:
+                        if st.button("Check Answer", key="dialogue_check"):
+                            st.session_state.dialogue_user_answer = user_answer
+                            st.session_state.dialogue_answered = True
+                            if user_answer == exercise['answer']:
+                                st.session_state.dialogue_correct = True
+                                st.session_state.dialogue_right_streak += 1
+                                st.session_state.dialogue_wrong_streak = 0
+                                user_manager.record_practice_result("advanced", "dialogue_comprehension", True, exercise['question'])
+                            else:
+                                st.session_state.dialogue_correct = False
+                                st.session_state.dialogue_wrong_streak += 1
+                                st.session_state.dialogue_right_streak = 0
+                                user_manager.record_practice_result("advanced", "dialogue_comprehension", False, exercise['question'])
+                            st.rerun()
+
+                    # Show feedback and action buttons after checking the answer
+                    if st.session_state.dialogue_answered:
+                        if st.session_state.dialogue_correct:
+                            st.success("✅ Correct! 🎉 Great job!")
+                            st.info(exercise['explanation'])
+                            
+                            # Special completion message for dialogue comprehension
+                            if st.session_state.dialogue_right_streak >= 6:
+                                st.balloons()  # Add celebration balloons
+                                st.success("🎊 **Congratulations! You have excellently completed the highest difficulty test. You have fully mastered the basics of Japanese! Give yourself some encouragement!** 🎊")
+                                st.info("🌟 **Achievement Unlocked:** Japanese Foundation Master! 🌟\n\nYou've conquered the foundational Japanese hiragana learning and can now confidently use other more advanced Japanese learning software. Keep up the excellent work!")
+                            
+                            # Only show Next Question for correct answers
+                            if st.button("Next Question", key="dialogue_next_correct"):
+                                new_dialogue_question()
+                                st.rerun()
+                        else:
+                            st.error(f"❌ Not quite. The correct answer is '{exercise['answer']}'")
+                            st.info(exercise['explanation'])
+                            
+                            # Show recommendation if 3 wrong in a row
+                            if st.session_state.dialogue_wrong_streak >= 3:
+                                st.warning("🔎 Having trouble with dialogue comprehension? Consider practicing more vocabulary and grammar first, or try starting with easier conversations.")
+                            
+                            # Show both Try Again and Next Question for incorrect answers
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                if st.button("Try Again", key="dialogue_retry"):
+                                    st.session_state.dialogue_answered = False
+                                    st.session_state.dialogue_user_answer = None
+                                    st.rerun()
+                            with col2:
+                                if st.button("Next Question", key="dialogue_next_incorrect"):
+                                    new_dialogue_question()
+                                    st.rerun()
 # Settings page
 elif page == "Settings":
     st.title("Settings")
@@ -500,13 +859,14 @@ elif page == "Settings":
                     if level_stats:
                         # Create a table of practice type statistics
                         data = []
-                        for practice_type, stats in level_stats.items():                            # Format for display
+                        for practice_type, stats in level_stats.items():
+                            # Format for display
                             display_name = {
                                 "kana_matching": "Match Hiragana & Katakana",
                                 "simple_vocabulary": "Basic Word Practice",
                                 "common_phrases": "Common Japanese Phrases",
                                 "vocabulary_categories": "Vocabulary by Category",
-                                "sentence_creation": "Create Sentences"
+                                "translation_practice": "Translation Practice"
                             }.get(practice_type, practice_type.replace("_", " ").title())
                             
                             # Calculate accuracy
@@ -540,7 +900,7 @@ elif page == "Settings":
                                     "simple_vocabulary": "Basic Word Practice",
                                     "common_phrases": "Common Japanese Phrases",
                                     "vocabulary_categories": "Vocabulary by Category",
-                                    "sentence_creation": "Create Sentences"
+                                    "translation_practice": "Translation Practice"
                                 }.get(least_practiced, least_practiced.replace("_", " ").title())
                                 st.info(f"💡 You should try practicing '{display_name}' more often")
                             
