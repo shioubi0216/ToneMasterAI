@@ -7,3 +7,6 @@ langchain-community>=0.0.10
 faiss-cpu>=1.7.4
 python-dotenv>=1.0.0
 plotly>=5.15.0
+supabase>=2.0.0
+bcrypt>=4.0.0
+pyjwt>=2.8.0

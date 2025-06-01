@@ -6,7 +6,8 @@ from modules.ai_service import AIService
 from modules.syllabary import JapaneseSyllabary
 from modules.user_data import UserProgressManager
 from modules.content_recommender import ContentRecommender
-from modules.practice_manager import PracticeManager  # Import the new module
+from modules.practice_manager import PracticeManager
+from modules.auth_manager import get_auth_manager
 
 # Load environment variables
 load_dotenv()
@@ -25,13 +26,84 @@ def init_services():
     syllabary = JapaneseSyllabary()
     user_manager = UserProgressManager()
     recommender = ContentRecommender(ai_service)
-    practice_manager = PracticeManager()  # Initialize the practice manager
-    return ai_service, syllabary, user_manager, recommender, practice_manager
+    practice_manager = PracticeManager()
+    auth_manager = get_auth_manager()
+    return ai_service, syllabary, user_manager, recommender, practice_manager, auth_manager
 
-ai_service, syllabary, user_manager, recommender, practice_manager = init_services()
+ai_service, syllabary, user_manager, recommender, practice_manager, auth_manager = init_services()
+
+# 認證檢查 - 在所有其他內容之前
+def show_auth_page():
+    """顯示登入/註冊頁面"""
+    st.title("🇯🇵 ToneMaster AI")
+    st.markdown("### 歡迎來到 ToneMaster AI 日語學習平台")
+    
+    # 建立登入/註冊選項卡
+    auth_tabs = st.tabs(["登入", "註冊"])
+    
+    with auth_tabs[0]:
+        st.subheader("用戶登入")
+        with st.form("login_form"):
+            email_or_username = st.text_input("Email 或用戶名稱")
+            password = st.text_input("密碼", type="password")
+            remember_me = st.checkbox("記住我")
+            submit_login = st.form_submit_button("登入")
+            
+            if submit_login:
+                if email_or_username and password:
+                    success, message, user = auth_manager.login_user(email_or_username, password)
+                    if success and user:
+                        auth_manager.set_session(user, remember_me)
+                        st.success(message)
+                        st.rerun()
+                    else:
+                        st.error(message)
+                else:
+                    st.error("請填寫所有欄位")
+    
+    with auth_tabs[1]:
+        st.subheader("用戶註冊")
+        
+        with st.form("register_form"):
+            email = st.text_input("Email")
+            username = st.text_input("用戶名稱")
+            password = st.text_input("密碼", type="password")
+            confirm_password = st.text_input("確認密碼", type="password")
+            submit_register = st.form_submit_button("註冊")
+            
+            if submit_register:
+                if email and username and password and confirm_password:
+                    if password != confirm_password:
+                        st.error("密碼與確認密碼不符")
+                    else:
+                        success, message, user = auth_manager.register_user(email, username, password)
+                        if success and user:
+                            st.success(message)
+                            st.info("請使用新帳號登入")
+                        else:
+                            st.error(message)
+                else:
+                    st.error("請填寫所有欄位")
+
+# 檢查用戶是否已登入
+if not auth_manager.is_logged_in():
+    show_auth_page()
+    st.stop()
+
+# 如果用戶已登入，顯示主要應用程式內容
 
 # Sidebar menu
 st.sidebar.title("ToneMaster AI")
+
+# 顯示當前用戶資訊和登出按鈕
+current_user = auth_manager.get_current_user()
+if current_user:
+    st.sidebar.markdown(f"**歡迎, {current_user['username']}!**")
+    if st.sidebar.button("登出"):
+        auth_manager.logout_user()
+        st.rerun()
+    st.sidebar.markdown("---")
+
 page = st.sidebar.radio(
     "Navigation",
     ["Home", "Learn Hiragana", "Learn Katakana", "Practice", "Settings"]
@@ -923,10 +995,6 @@ elif page == "Settings":
     else:
         st.info("Start practicing to see your progress tracked here!")
     
-    # App settings
-    st.subheader("Application Settings")
-    theme = st.selectbox("Theme", ["Light", "Dark"])
-    
     # Learning preferences
     st.subheader("Learning Preferences")
     daily_goal = st.slider("Daily learning goal (minutes)", 5, 60, 15)
@@ -937,11 +1005,6 @@ elif page == "Settings":
         "Default Practice Mode",
         ["Regular", "Spaced Repetition", "Challenge Mode"]
     )
-    
-    # Audio settings
-    st.subheader("Audio Settings")
-    enable_audio = st.checkbox("Enable pronunciation audio", value=True)
-    audio_volume = st.slider("Audio volume", 0, 100, 75)
     
     # Reset progress option
     st.subheader("Reset Progress")
