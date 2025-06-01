@@ -954,4 +954,3 @@ elif page == "Settings":
 # Footer
 st.markdown("---")
 st.markdown("ToneMaster AI - Personalized Japanese Learning | Powered by Mistral AI")
-
